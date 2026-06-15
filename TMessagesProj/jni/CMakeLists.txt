@@ -56,6 +56,7 @@ add_library(tgnet SHARED
     ${TGNET_SOURCES}
     TgNetWrapper.cpp
     jni.c
+    akro_stubs.c
 )
 
 target_include_directories(tgnet PRIVATE
