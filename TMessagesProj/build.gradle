@@ -17,7 +17,7 @@ android {
         if (nativeFilesExist) {
             externalNativeBuild {
                 cmake {
-                    cppFlags "-std=c++14 -DANDROID -frtti -fexceptions"
+                    cppFlags "-std=c++17 -DANDROID -frtti -fexceptions"
                     abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
                 }
             }
