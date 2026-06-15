@@ -1,13 +1,12 @@
 apply plugin: 'com.android.library'
 
-// تحقق إذا ملفات الـ native موجودة
 def nativeFilesExist = file("jni/tgnet").exists() &&
                        file("jni/sqlite/sqlite3.c").exists() &&
                        file("jni/TgNetWrapper.cpp").exists()
 
 android {
     compileSdk 34
-    namespace 'org.telegram.messenger.voip'
+    namespace 'org.telegram.messenger'
     ndkVersion "25.2.9519653"
 
     defaultConfig {
@@ -40,7 +39,7 @@ android {
 
     sourceSets {
         main {
-            // لو Native مش موجود، مش هيبني .so — بس المكتبة نفسها هتتبنى
+            java.srcDirs = ['src/main/java']
             if (!nativeFilesExist) {
                 jniLibs.srcDirs = []
             }
@@ -53,7 +52,7 @@ dependencies {
 }
 
 if (!nativeFilesExist) {
-    println "⚠️  TMessagesProj: Native files not found — building stub library (UI-only mode)"
+    println "⚠️  TMessagesProj: Native files not found — UI-only mode"
 } else {
-    println "✅  TMessagesProj: Native files found — full build with tgnet"
+    println "✅  TMessagesProj: Native files found — full tgnet build"
 }
