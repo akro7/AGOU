@@ -13,7 +13,6 @@ env:
   CMAKE_VERSION: '3.22.1'
 
 jobs:
-  # ────────────────────────────────────────────────────────────────────────────
   build-debug:
     name: 🔨 Debug Build
     runs-on: ubuntu-latest
@@ -54,14 +53,12 @@ jobs:
 
       - name: Setup Gradle Wrapper
         run: |
-          # إذا gradle/wrapper/gradle-wrapper.jar مش موجود نعمله
           if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
             echo "📥 Downloading gradle-wrapper.jar..."
             mkdir -p gradle/wrapper
             curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
               -o gradle/wrapper/gradle-wrapper.jar
           fi
-          # تأكد gradlew موجود وله permissions
           if [ ! -f "gradlew" ]; then
             echo "❌ gradlew not found!"
             exit 1
@@ -86,6 +83,20 @@ jobs:
             echo "⚠️ No ZIP files found — skipping native extraction"
           fi
 
+      - name: Create debug keystore
+        run: |
+          mkdir -p $HOME/.android
+          keytool -genkeypair -v \
+            -keystore $HOME/.android/debug.keystore \
+            -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 \
+            -validity 10000 \
+            -storepass android \
+            -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US" \
+            -noprompt
+          echo "✅ debug.keystore created"
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee build-log.txt
 
@@ -104,7 +115,6 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
 
-  # ────────────────────────────────────────────────────────────────────────────
   lint:
     name: 🔍 Lint Check
     runs-on: ubuntu-latest
