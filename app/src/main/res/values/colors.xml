@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AkroGram - Telegram-like palette -->
+    <color name="tg_blue">#2CA5E0</color>
+    <color name="tg_blue_dark">#1A7BBF</color>
+    <color name="tg_blue_light">#5BC8F5</color>
+
+    <color name="bg_primary">#FFFFFF</color>
+    <color name="bg_secondary">#F5F5F5</color>
+    <color name="bg_dark">#212121</color>
+
+    <color name="msg_out_bg">#DCFFB7</color>
+    <color name="msg_in_bg">#FFFFFF</color>
+    <color name="msg_out_bg_dark">#2B5278</color>
+    <color name="msg_in_bg_dark">#182533</color>
+
+    <color name="text_primary">#000000</color>
+    <color name="text_secondary">#8E8E93</color>
+    <color name="text_on_blue">#FFFFFF</color>
+    <color name="text_time">#9E9E9E</color>
+    <color name="text_unread">#FFFFFF</color>
+
+    <color name="unread_badge">#2CA5E0</color>
+    <color name="story_ring">#2CA5E0</color>
+    <color name="story_ring_viewed">#AAAAAA</color>
+
+    <color name="divider">#E5E5EA</color>
+    <color name="splash_bg">#2CA5E0</color>
+</resources>

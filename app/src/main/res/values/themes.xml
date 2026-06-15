@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AkroGram" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/tg_blue</item>
+        <item name="colorPrimaryDark">@color/tg_blue_dark</item>
+        <item name="colorAccent">@color/tg_blue</item>
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:statusBarColor">@color/tg_blue</item>
+    </style>
+
+    <style name="Theme.AkroGram.Splash">
+        <item name="android:windowBackground">@color/splash_bg</item>
+        <item name="android:statusBarColor">@color/tg_blue</item>
+        <item name="android:navigationBarColor">@color/tg_blue</item>
+    </style>
+
+    <style name="Theme.AkroGram.Dark" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/bg_dark</item>
+        <item name="android:windowBackground">@color/bg_dark</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>

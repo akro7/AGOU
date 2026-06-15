@@ -1,0 +1,209 @@
+name: AkroGram Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '17'
+  NDK_VERSION:  '25.2.9519653'
+  CMAKE_VERSION: '3.22.1'
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  build-debug:
+    name: 🔨 Debug Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK & CMake
+        run: |
+          echo "y" | sdkmanager "ndk;${{ env.NDK_VERSION }}"
+          echo "y" | sdkmanager "cmake;${{ env.CMAKE_VERSION }}"
+
+      - name: Inject API credentials
+        env:
+          TG_API_ID:   ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+        run: |
+          if [ -n "$TG_API_ID" ]; then
+            sed -i "s/\"35978619\"/\"$TG_API_ID\"/" \
+              app/src/main/java/com/akro/agram/network/TelegramController.java
+            sed -i "s/\"7521a35c396ddecada6da6a8687a0324\"/\"$TG_API_HASH\"/" \
+              app/src/main/java/com/akro/agram/network/TelegramController.java
+            echo "✅ API credentials overridden from secrets"
+          else
+            echo "ℹ️ Using hardcoded credentials from source"
+          fi
+
+      - name: Setup Gradle Wrapper
+        run: |
+          # إذا gradle/wrapper/gradle-wrapper.jar مش موجود نعمله
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "📥 Downloading gradle-wrapper.jar..."
+            mkdir -p gradle/wrapper
+            curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+              -o gradle/wrapper/gradle-wrapper.jar
+          fi
+          # تأكد gradlew موجود وله permissions
+          if [ ! -f "gradlew" ]; then
+            echo "❌ gradlew not found!"
+            exit 1
+          fi
+          chmod +x gradlew
+          echo "✅ Gradle wrapper ready"
+
+      - name: Extract native libs (if present)
+        run: |
+          if ls *.zip 1>/dev/null 2>&1; then
+            for f in *.zip; do
+              echo "Trying to extract native files from $f..."
+              unzip -q "$f" \
+                "*/jni/tgnet/*" \
+                "*/jni/sqlite/*" \
+                "*/jni/tde2e/*" \
+                "*/jni/TgNetWrapper.cpp" \
+                "*/jni/jni.c" \
+                -d TMessagesProj/ 2>/dev/null || true
+            done
+          else
+            echo "⚠️ No ZIP files found — skipping native extraction"
+          fi
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AkroGram-debug-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+  # ────────────────────────────────────────────────────────────────────────────
+  build-release:
+    name: 📦 Release Build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: gradle
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install NDK & CMake
+        run: |
+          echo "y" | sdkmanager "ndk;${{ env.NDK_VERSION }}"
+          echo "y" | sdkmanager "cmake;${{ env.CMAKE_VERSION }}"
+
+      - name: Inject API credentials
+        env:
+          TG_API_ID:   ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+        run: |
+          sed -i "s/\"35978619\"/\"$TG_API_ID\"/" \
+            app/src/main/java/com/akro/agram/network/TelegramController.java
+          sed -i "s/\"7521a35c396ddecada6da6a8687a0324\"/\"$TG_API_HASH\"/" \
+            app/src/main/java/com/akro/agram/network/TelegramController.java
+
+      - name: Setup Gradle Wrapper
+        run: |
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            mkdir -p gradle/wrapper
+            curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+              -o gradle/wrapper/gradle-wrapper.jar
+          fi
+          chmod +x gradlew
+
+      - name: Decode Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > akrogram-release.jks
+          fi
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace --no-daemon
+
+      - name: Sign APK
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64:  ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS:        ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:     ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD:   ${{ secrets.STORE_PASSWORD }}
+        run: |
+          BUILD_TOOLS=$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+          $ANDROID_HOME/build-tools/$BUILD_TOOLS/apksigner sign \
+            --ks akrogram-release.jks \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$STORE_PASSWORD" \
+            --key-pass "pass:$KEY_PASSWORD" \
+            --out app/build/outputs/apk/release/AkroGram-signed.apk \
+            app/build/outputs/apk/release/*-release*.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AkroGram ${{ github.ref_name }}"
+          files: app/build/outputs/apk/release/*.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: 🔍 Lint Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle Wrapper
+        run: |
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            mkdir -p gradle/wrapper
+            curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+              -o gradle/wrapper/gradle-wrapper.jar
+          fi
+          chmod +x gradlew
+
+      - name: Run Lint
+        run: ./gradlew lint --no-daemon
+
+      - name: Upload Lint Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results*.html
+          retention-days: 7

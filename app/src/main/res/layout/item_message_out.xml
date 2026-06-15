@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="end"
+    android:paddingVertical="2dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="280dp"
+        android:orientation="vertical"
+        android:background="@drawable/bg_bubble_out"
+        android:paddingHorizontal="10dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="4dp">
+
+        <!-- Forward indicator -->
+        <TextView
+            android:id="@+id/tvForward"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#2CA5E0"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone" />
+
+        <!-- Reply bubble -->
+        <LinearLayout
+            android:id="@+id/layoutReply"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_reply"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:background="@color/tg_blue"
+                android:layout_marginEnd="6dp" />
+
+            <TextView
+                android:id="@+id/tvReply"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Message text -->
+        <TextView
+            android:id="@+id/tvText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:lineSpacingMultiplier="1.2" />
+
+        <!-- Time + status -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/tvTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_time"
+                android:textSize="11sp" />
+
+            <ImageView
+                android:id="@+id/ivStatus"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="3dp"
+                android:tint="@color/tg_blue" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="@color/bg_primary">
+
+    <ImageView
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AkroGram"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:gravity="center"
+        android:layout_marginBottom="32dp" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Phone step -->
+    <LinearLayout
+        android:id="@+id/layoutPhone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <EditText
+            android:id="@+id/etPhone"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:hint="@string/phone_hint"
+            android:inputType="phone"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:background="@drawable/bg_edittext"
+            android:padding="12dp" />
+
+        <Button
+            android:id="@+id/btnPhone"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="@string/next"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/tg_blue"
+            android:textColor="@color/text_on_blue"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- Code step -->
+    <LinearLayout
+        android:id="@+id/layoutCode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/etCode"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:hint="@string/code_hint"
+            android:inputType="number"
+            android:maxLength="5"
+            android:textSize="24sp"
+            android:gravity="center"
+            android:letterSpacing="0.3"
+            android:background="@drawable/bg_edittext"
+            android:padding="12dp" />
+
+        <Button
+            android:id="@+id/btnCode"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="@string/confirm"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/tg_blue"
+            android:textColor="@color/text_on_blue"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- Password step -->
+    <LinearLayout
+        android:id="@+id/layoutPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/etPassword"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:hint="@string/password_hint"
+            android:inputType="textPassword"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:background="@drawable/bg_edittext"
+            android:padding="12dp" />
+
+        <Button
+            android:id="@+id/btnPassword"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="@string/confirm"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/tg_blue"
+            android:textColor="@color/text_on_blue"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+</LinearLayout>

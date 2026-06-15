@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AgouGram</string>
+    <string name="chats">المحادثات</string>
+    <string name="contacts">جهات الاتصال</string>
+    <string name="settings">الإعدادات</string>
+    <string name="search">بحث</string>
+    <string name="type_message">اكتب رسالة...</string>
+    <string name="send">إرسال</string>
+    <string name="stories">القصص</string>
+    <string name="new_message">رسالة جديدة</string>
+    <string name="reply">رد</string>
+    <string name="forward">إعادة توجيه</string>
+    <string name="delete">حذف</string>
+    <string name="copy">نسخ</string>
+    <string name="phone_hint">+20 10XXXXXXXX</string>
+    <string name="code_hint">12345</string>
+    <string name="password_hint">كلمة المرور</string>
+    <string name="next">التالي</string>
+    <string name="confirm">تأكيد</string>
+    <string name="error_generic">حدث خطأ، حاول مرة أخرى</string>
+    <string name="loading">جار التحميل...</string>
+    <string name="online">متصل</string>
+    <string name="last_seen_recently">آخر ظهور مؤخراً</string>
+    <string name="last_seen_hidden">آخر ظهور مخفي</string>
+    <string name="group_members">%d أعضاء</string>
+    <string name="forwarded_from">تمت إعادة التوجيه من</string>
+
+    <!-- Story menu -->
+    <string name="story_stealth_on">🔕 تفعيل إخفاء المشاهدة</string>
+    <string name="story_stealth_off">✅ إخفاء المشاهدة مفعّل</string>
+    <string name="story_save">💾 حفظ القصة</string>
+    <string name="story_skip">⏩ تخطي القصة</string>
+    <string name="story_mute_user">🚫 كتم هذا الشخص</string>
+    <string name="story_stealth_toast">🔕 إخفاء المشاهدة مفعّل — لن يعرف صاحب القصة أنك شاهدتها</string>
+    <string name="story_saved">✅ تم حفظ القصة في الصور</string>
+    <string name="story_save_failed">❌ فشل الحفظ، تأكد من الإذن</string>
+    <string name="story_muted">تم كتم قصص %s</string>
+
+    <!-- Last-seen bypass -->
+    <string name="last_seen_fetching">جار استرداد آخر ظهور…</string>
+    <string name="last_seen_now">متصل الآن</string>
+    <string name="last_seen_minutes">آخر ظهور منذ %d دقيقة</string>
+    <string name="last_seen_hours">آخر ظهور منذ %d ساعة</string>
+    <string name="last_seen_days">آخر ظهور منذ %d يوم</string>
+    <string name="last_seen_long_ago">آخر ظهور منذ فترة طويلة</string>
+</resources>
