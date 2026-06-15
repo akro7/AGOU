@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(tgnet)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -w")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -frtti -fexceptions")
 
