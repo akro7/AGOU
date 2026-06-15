@@ -1,38 +1,59 @@
 apply plugin: 'com.android.library'
 
+// تحقق إذا ملفات الـ native موجودة
+def nativeFilesExist = file("jni/tgnet").exists() &&
+                       file("jni/sqlite/sqlite3.c").exists() &&
+                       file("jni/TgNetWrapper.cpp").exists()
+
 android {
     compileSdk 34
+    namespace 'org.telegram.messenger.voip'
     ndkVersion "25.2.9519653"
 
     defaultConfig {
         minSdk 21
         targetSdk 34
 
-        externalNativeBuild {
-            cmake {
-                cppFlags "-std=c++14 -DANDROID -frtti -fexceptions"
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+        if (nativeFilesExist) {
+            externalNativeBuild {
+                cmake {
+                    cppFlags "-std=c++14 -DANDROID -frtti -fexceptions"
+                    abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                }
             }
         }
     }
 
-    externalNativeBuild {
-        cmake {
-            path "jni/CMakeLists.txt"
-            version "3.22.1"
+    if (nativeFilesExist) {
+        externalNativeBuild {
+            cmake {
+                path "jni/CMakeLists.txt"
+                version "3.22.1"
+            }
         }
     }
 
     buildTypes {
-        release {
-            minifyEnabled false
-        }
-        debug {
-            minifyEnabled false
+        release { minifyEnabled false }
+        debug   { minifyEnabled false }
+    }
+
+    sourceSets {
+        main {
+            // لو Native مش موجود، مش هيبني .so — بس المكتبة نفسها هتتبنى
+            if (!nativeFilesExist) {
+                jniLibs.srcDirs = []
+            }
         }
     }
 }
 
 dependencies {
     implementation 'androidx.annotation:annotation:1.7.0'
+}
+
+if (!nativeFilesExist) {
+    println "⚠️  TMessagesProj: Native files not found — building stub library (UI-only mode)"
+} else {
+    println "✅  TMessagesProj: Native files found — full build with tgnet"
 }
