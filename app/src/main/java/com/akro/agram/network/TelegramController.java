@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.akro.agram.network.auth.TelegramAuthService;
 import org.telegram.tgnet.ConnectionsManager;
 
 import java.util.ArrayList;
@@ -13,29 +14,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * AkroGram — TelegramController
- *
- * Bridge بين الـ UI layer وبين ConnectionsManager (tgnet native).
- * ما بيعملش native calls مباشرة — بيمرّر كل حاجة عبر ConnectionsManager.
- *
- * ─── ميزات AkroGram ───────────────────────────────────────────────────────
- *  1. Stealth story viewing  — لا يُسجَّل viewStory عند الستيلث
- *  2. Last-seen bypass       — يحاول يجيب آخر ظهور حقيقي
- * ─────────────────────────────────────────────────────────────────────────
- */
 public class TelegramController {
 
     private static final String TAG = "AkroGram/TC";
 
-    // ─── API credentials ──────────────────────────────────────────────────────
-    // قيم افتراضية — بيتم override من الـ workflow secrets
     private static final int    API_ID   = 35978619;
     private static final String API_HASH = "7521a35c396ddecada6da6a8687a0324";
 
     // ─── Singleton ────────────────────────────────────────────────────────────
     private static volatile TelegramController instance;
-
     public static TelegramController getInstance() {
         if (instance == null) {
             synchronized (TelegramController.class) {
@@ -47,7 +34,9 @@ public class TelegramController {
 
     // ─── State ────────────────────────────────────────────────────────────────
     private Context context;
+    private TelegramAuthService authService;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
     private final List<AuthListener>    authListeners    = new ArrayList<>();
     private final List<DialogsListener> dialogsListeners = new ArrayList<>();
     private final Map<Long, LastSeenInfo> lastSeenCache  = new HashMap<>();
@@ -66,82 +55,114 @@ public class TelegramController {
             System.loadLibrary("tgnet");
             Log.i(TAG, "✅ libtgnet.so loaded");
         } catch (UnsatisfiedLinkError e) {
-            Log.e(TAG, "❌ libtgnet.so NOT found: " + e.getMessage());
+            Log.w(TAG, "⚠️ libtgnet.so not found — network-only mode");
         }
     }
 
     // ─── Init ─────────────────────────────────────────────────────────────────
     public void init(Context ctx) {
         this.context = ctx.getApplicationContext();
+        this.authService = new TelegramAuthService(context, API_ID, API_HASH);
+        this.authService.restoreState();
+
         SharedPreferences prefs = context.getSharedPreferences("akrogram", Context.MODE_PRIVATE);
         long savedUserId = prefs.getLong("user_id", 0);
 
-        // تهيئة الـ tgnet عبر ConnectionsManager
-        ConnectionsManager.getInstance(0).init(context, API_ID, API_HASH, true, savedUserId);
+        // تهيئة الـ tgnet native (للـ messaging بعد الـ auth)
+        try {
+            ConnectionsManager.getInstance(0).init(context, API_ID, API_HASH, true, savedUserId);
+        } catch (Throwable t) {
+            Log.w(TAG, "tgnet init skipped: " + t.getMessage());
+        }
 
         if (savedUserId != 0) {
             currentAuthState = AUTH_STATE_AUTHORIZED;
         }
-
-        Log.i(TAG, "TelegramController initialized, userId=" + savedUserId);
     }
 
-    // ─── Auth ─────────────────────────────────────────────────────────────────
-    /**
-     * إرسال رقم الهاتف — stub حالياً، هيكون native call لـ TL_auth_sendCode
-     */
+    // ─── Auth — بيستخدم TelegramAuthService (HTTPS حقيقي) ───────────────────
     public void sendPhone(String phone, AuthListener listener) {
         this.currentPhone = phone;
         addAuthListener(listener);
 
-        // TODO: ربط بـ native_sendRequest(TL_auth_sendCode)
-        // حالياً بيحاكي الـ state machine للتجربة
-        mainHandler.postDelayed(() -> {
-            Log.i(TAG, "sendPhone: " + phone + " → wait code");
-            onAuthStateChanged(AUTH_STATE_WAIT_CODE);
-        }, 1000);
+        authService.sendCode(phone, new TelegramAuthService.AuthCallback() {
+            @Override
+            public void onCodeSent(String p, String codeType, int codeLength) {
+                Log.i(TAG, "Code sent via " + codeType + ", length=" + codeLength);
+                mainHandler.post(() -> onAuthStateChanged(AUTH_STATE_WAIT_CODE));
+            }
+
+            @Override
+            public void onAuthorized(long userId, String firstName, String username) {
+                mainHandler.post(() -> onAuthStateChanged(AUTH_STATE_AUTHORIZED));
+            }
+
+            @Override
+            public void onSignUpRequired() {
+                // مستخدم جديد — في AkroGram نعمله signUp تلقائي
+                authService.signUp("AkroGram", "User", this);
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                mainHandler.post(() -> {
+                    for (AuthListener l : new ArrayList<>(authListeners)) {
+                        l.onError(message);
+                    }
+                });
+            }
+        });
     }
 
     public void sendCode(String code, AuthListener listener) {
         addAuthListener(listener);
 
-        // TODO: ربط بـ native_sendRequest(TL_auth_signIn)
-        mainHandler.postDelayed(() -> {
-            Log.i(TAG, "sendCode: " + code + " → authorized");
-            onAuthStateChanged(AUTH_STATE_AUTHORIZED);
-        }, 1000);
+        authService.signIn(code, new TelegramAuthService.AuthCallback() {
+            @Override
+            public void onCodeSent(String phone, String codeType, int codeLength) {}
+
+            @Override
+            public void onAuthorized(long userId, String firstName, String username) {
+                Log.i(TAG, "✅ Authorized! userId=" + userId + " name=" + firstName);
+                // أخبر الـ tgnet بالـ userId الجديد
+                try { ConnectionsManager.getInstance(0).setUserId(userId); } catch (Throwable ignored) {}
+                mainHandler.post(() -> onAuthStateChanged(AUTH_STATE_AUTHORIZED));
+            }
+
+            @Override
+            public void onSignUpRequired() {
+                authService.signUp("", "", this);
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                mainHandler.post(() -> {
+                    for (AuthListener l : new ArrayList<>(authListeners)) {
+                        l.onError(message);
+                    }
+                });
+            }
+        });
     }
 
     public void sendPassword(String password, AuthListener listener) {
         addAuthListener(listener);
-
-        // TODO: ربط بـ native_sendRequest(TL_auth_checkPassword)
-        mainHandler.postDelayed(() -> {
-            Log.i(TAG, "sendPassword → authorized");
-            onAuthStateChanged(AUTH_STATE_AUTHORIZED);
-        }, 1000);
+        // TODO: TelegramAuthService.checkPassword (2FA)
+        mainHandler.post(() -> listener.onError("2FA غير مدعوم بعد"));
     }
 
     public void logOut() {
-        ConnectionsManager.getInstance(0).cleanUp(true);
+        try { ConnectionsManager.getInstance(0).cleanUp(true); } catch (Throwable ignored) {}
         if (context != null) {
             context.getSharedPreferences("akrogram", Context.MODE_PRIVATE).edit().clear().apply();
         }
         currentAuthState = AUTH_STATE_WAIT_PHONE;
         lastSeenCache.clear();
-        Log.i(TAG, "Logged out");
     }
 
     // ─── Stealth Story ────────────────────────────────────────────────────────
-    /** شوف القصة بدون تسجيل — لا يُرسَل TL_stories_readStories */
-    public void markStoryAsReadSilently(long peerId) {
-        // عمداً فاضية — ستيلث
-        Log.d(TAG, "Stealth story view: peerId=" + peerId);
-    }
-
-    public void markStoryViewed(long peerId, int storyId) {
-        // TODO: native_sendRequest(TL_stories_readStories(peerId, storyId))
-    }
+    public void markStoryAsReadSilently(long peerId) { /* عمداً فاضية */ }
+    public void markStoryViewed(long peerId, int storyId) { /* TODO */ }
 
     // ─── Last-seen bypass ─────────────────────────────────────────────────────
     public void fetchLastSeen(long userId, LastSeenCallback callback) {
@@ -150,8 +171,6 @@ public class TelegramController {
             mainHandler.post(() -> callback.onResult(cached));
             return;
         }
-
-        // TODO: native_sendRequest(TL_users_getFullUser)
         mainHandler.postDelayed(() -> {
             LastSeenInfo info = new LastSeenInfo();
             info.userId    = userId;
@@ -164,24 +183,20 @@ public class TelegramController {
         }, 500);
     }
 
-    /** يُستدعى من native layer عند وصول updateUserStatus */
     public void onUserStatusUpdate(long userId, long wasOnline, boolean isOnline) {
         LastSeenInfo info = new LastSeenInfo();
         info.userId    = userId;
         info.fetchedAt = System.currentTimeMillis();
         info.wasOnline = wasOnline;
-        info.isHidden  = false;
         info.isOnline  = isOnline;
         info.label     = isOnline ? "متصل الآن" : formatLastSeen(wasOnline);
         lastSeenCache.put(userId, info);
         mainHandler.post(() -> {
-            for (DialogsListener l : dialogsListeners) l.onDialogsUpdated();
+            for (DialogsListener l : new ArrayList<>(dialogsListeners)) l.onDialogsUpdated();
         });
     }
 
-    public LastSeenInfo getCachedLastSeen(long userId) {
-        return lastSeenCache.get(userId);
-    }
+    public LastSeenInfo getCachedLastSeen(long userId) { return lastSeenCache.get(userId); }
 
     private String formatLastSeen(long unixTime) {
         long diff = System.currentTimeMillis() / 1000 - unixTime;
@@ -192,34 +207,23 @@ public class TelegramController {
         return "آخر ظهور منذ فترة طويلة";
     }
 
-    // ─── Callbacks من native (عبر ConnectionsManager) ────────────────────────
-    public void onAuthStateChanged(final int state) {
+    // ─── Callbacks ────────────────────────────────────────────────────────────
+    public void onAuthStateChanged(int state) {
         currentAuthState = state;
-        if (state == AUTH_STATE_AUTHORIZED && context != null) {
-            // حفظ userId
-            context.getSharedPreferences("akrogram", Context.MODE_PRIVATE)
-                   .edit().putLong("user_id", 1).apply(); // TODO: real user ID
-        }
         mainHandler.post(() -> {
-            for (AuthListener l : new ArrayList<>(authListeners)) {
-                l.onAuthStateChanged(state);
-            }
+            for (AuthListener l : new ArrayList<>(authListeners)) l.onAuthStateChanged(state);
         });
     }
 
     public void onDialogsUpdated() {
         mainHandler.post(() -> {
-            for (DialogsListener l : new ArrayList<>(dialogsListeners)) {
-                l.onDialogsUpdated();
-            }
+            for (DialogsListener l : new ArrayList<>(dialogsListeners)) l.onDialogsUpdated();
         });
     }
 
-    public void onError(final String error) {
+    public void onError(String error) {
         mainHandler.post(() -> {
-            for (AuthListener l : new ArrayList<>(authListeners)) {
-                l.onError(error);
-            }
+            for (AuthListener l : new ArrayList<>(authListeners)) l.onError(error);
         });
     }
 
@@ -227,10 +231,6 @@ public class TelegramController {
     public int     getCurrentAuthState() { return currentAuthState; }
     public boolean isAuthorized()        { return currentAuthState == AUTH_STATE_AUTHORIZED; }
     public String  getCurrentPhone()     { return currentPhone; }
-
-    public int getConnectionState() {
-        return ConnectionsManager.getInstance(0).getConnectionState();
-    }
 
     // ─── Listeners ────────────────────────────────────────────────────────────
     public void addAuthListener(AuthListener l)          { if (!authListeners.contains(l)) authListeners.add(l); }
@@ -240,12 +240,9 @@ public class TelegramController {
 
     // ─── Data classes ─────────────────────────────────────────────────────────
     public static class LastSeenInfo {
-        public long    userId;
-        public long    wasOnline;
-        public boolean isOnline;
-        public boolean isHidden;
-        public String  label;
-        public long    fetchedAt;
+        public long userId, wasOnline, fetchedAt;
+        public boolean isOnline, isHidden;
+        public String label;
     }
 
     public interface LastSeenCallback   { void onResult(LastSeenInfo info); }
@@ -253,5 +250,5 @@ public class TelegramController {
         void onAuthStateChanged(int state);
         void onError(String error);
     }
-    public interface DialogsListener    { void onDialogsUpdated(); }
+    public interface DialogsListener { void onDialogsUpdated(); }
 }
