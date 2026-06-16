@@ -2,8 +2,11 @@ package com.akro.agram;
 
 import android.app.Application;
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
 import com.akro.agram.network.TelegramController;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.tgnet.ConnectionsManager;
 
 public class AkroGramApp extends Application {
 
@@ -19,24 +22,45 @@ public class AkroGramApp extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
+        ApplicationLoader.applicationContext = getApplicationContext();
 
-        // تهيئة tgnet عبر reflection بدون تشغيل ApplicationLoader كامل
         try {
-            org.telegram.messenger.ApplicationLoader.applicationContext = getApplicationContext();
-            Class<?> nativeLoader = Class.forName("org.telegram.messenger.NativeLoader");
-            java.lang.reflect.Method initNativeLibs = nativeLoader.getDeclaredMethod("initNativeLibs", Context.class);
-            initNativeLibs.setAccessible(true);
-            initNativeLibs.invoke(null, getApplicationContext());
-            Log.i(TAG, "✅ NativeLoader initialized");
+            System.loadLibrary("tgnet");
+            Log.i(TAG, "✅ tgnet loaded");
         } catch (Throwable t) {
-            Log.e(TAG, "❌ NativeLoader failed: " + t.getMessage());
+            Log.e(TAG, "❌ tgnet load failed: " + t.getMessage());
+        }
+
+        // تهيئة ConnectionsManager بالبيانات المطلوبة
+        try {
+            ConnectionsManager.native_init(
+                0,                          // account index
+                BuildConfig.VERSION_CODE,   // version
+                (int)(System.currentTimeMillis() / 1000), // time
+                Build.MODEL,               // device
+                Build.VERSION.RELEASE,     // os
+                "AkroGram",               // app name
+                "1.0",                    // app version
+                getFilesDir().getAbsolutePath(), // files dir
+                getCacheDir().getAbsolutePath(), // cache dir
+                null,                     // log path
+                "en",                     // lang code
+                "en",                     // system lang
+                "",                       // config path
+                Build.MODEL,              // vendor name
+                false,                    // enable push
+                35978619,                 // API_ID
+                false                     // test backend
+            );
+            Log.i(TAG, "✅ ConnectionsManager initialized");
+        } catch (Throwable t) {
+            Log.e(TAG, "❌ CM native_init failed: " + t.getMessage());
         }
 
         try {
             TelegramController.getInstance().init(this);
-            Log.i(TAG, "✅ TelegramController initialized");
         } catch (Throwable t) {
-            Log.e(TAG, "❌ TelegramController init failed: " + t.getMessage());
+            Log.e(TAG, "❌ TC init failed: " + t.getMessage());
         }
     }
 }
