@@ -21,6 +21,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Clone Telegram source
+        run: |
+          git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
+          cp -r telegram-src/TMessagesProj/src/main/java/org/telegram \
+                TMessagesProj/src/main/java/org/
+          echo "✅ Telegram source copied"
+
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
@@ -121,6 +128,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Clone Telegram source
+        run: |
+          git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
+          cp -r telegram-src/TMessagesProj/src/main/java/org/telegram \
+                TMessagesProj/src/main/java/org/
+
       - uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
