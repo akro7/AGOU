@@ -33,8 +33,11 @@ jobs:
           # نسخ build.gradle الأصلي من DrKLO
           cp telegram-src/TMessagesProj/build.gradle TMessagesProj/build.gradle
 
-          # نسخ gradle.properties من DrKLO (يحتوي على APP_VERSION_NAME وغيره)
+          # نسخ gradle.properties من DrKLO
           cp telegram-src/gradle.properties gradle.properties
+
+          # نسخ google-services.json من DrKLO
+          cp telegram-src/TMessagesProj/google-services.json TMessagesProj/google-services.json
 
           # تفعيل buildConfig
           sed -i '/android {/a\\n    buildFeatures {\n        buildConfig true\n    }' TMessagesProj/build.gradle
@@ -46,7 +49,7 @@ jobs:
           sed -i 's/compileSdkVersion 34/compileSdkVersion 35/g' TMessagesProj/build.gradle
           sed -i 's/targetSdkVersion 34/targetSdkVersion 35/g' TMessagesProj/build.gradle
 
-          echo "✅ Telegram source + build.gradle + gradle.properties copied and patched"
+          echo "✅ All files copied and patched"
           echo "--- gradle.properties ---"
           cat gradle.properties
 
@@ -161,6 +164,7 @@ jobs:
 
           cp telegram-src/TMessagesProj/build.gradle TMessagesProj/build.gradle
           cp telegram-src/gradle.properties gradle.properties
+          cp telegram-src/TMessagesProj/google-services.json TMessagesProj/google-services.json
 
           sed -i '/android {/a\\n    buildFeatures {\n        buildConfig true\n    }' TMessagesProj/build.gradle
           sed -i 's/minSdkVersion 21/minSdkVersion 24/g' TMessagesProj/build.gradle
