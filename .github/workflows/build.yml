@@ -25,9 +25,14 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
           rm -rf TMessagesProj/src/main/java/org/telegram
-          cp -r telegram-src/TMessagesProj/src/main/java/org/telegram \
-                TMessagesProj/src/main/java/org/
-          echo "✅ Telegram source copied"
+          
+          # إنشاء الفولدر المستهدف أولاً للتأكد من مسار النسخ الصحيح
+          mkdir -p TMessagesProj/src/main/java/org/telegram
+          
+          # نسخ المحتويات الداخلية فقط دون استبدال أو التأثير على ملفات الـ gradle الخاصة بك
+          cp -r telegram-src/TMessagesProj/src/main/java/org/telegram/* TMessagesProj/src/main/java/org/telegram/
+          
+          echo "✅ Telegram source copied (keeping our custom build.gradle)"
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
@@ -134,8 +139,12 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
           rm -rf TMessagesProj/src/main/java/org/telegram
-          cp -r telegram-src/TMessagesProj/src/main/java/org/telegram \
-                TMessagesProj/src/main/java/org/
+          
+          # نفس التعديل لخطوة الـ Lint لضمان عدم حدوث تعارض
+          mkdir -p TMessagesProj/src/main/java/org/telegram
+          cp -r telegram-src/TMessagesProj/src/main/java/org/telegram/* TMessagesProj/src/main/java/org/telegram/
+          
+          echo "✅ Telegram source copied (keeping our custom build.gradle)"
 
       - uses: actions/setup-java@v4
         with:
