@@ -9,7 +9,7 @@ on:
 
 env:
   JAVA_VERSION: '17'
-  NDK_VERSION:  '25.2.9519653'
+  NDK_VERSION:  '27.2.12479018'
   CMAKE_VERSION: '3.22.1'
 
 jobs:
