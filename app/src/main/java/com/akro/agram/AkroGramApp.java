@@ -11,17 +11,18 @@ public class AkroGramApp extends ApplicationLoader {
     private static AkroGramApp instance;
 
     public static AkroGramApp getInstance() { return instance; }
-    public static Context getContext() { return instance != null ? instance.getApplicationContext() : null; }
+    public static Context getContext() {
+        return instance != null ? instance.getApplicationContext() : null;
+    }
 
     @Override
     public void onCreate() {
         instance = this;
-        try {
-            super.onCreate();
-        } catch (Throwable t) {
-            Log.e(TAG, "ApplicationLoader.onCreate failed: " + t.getMessage());
-        }
+        
+        // ضروري بدون try/catch عشان يهيأ libtgnet.so
+        super.onCreate();
 
+        // بعد ما الـ tgnet اتهيأ، شغّل الـ controller بتاعنا
         try {
             TelegramController.getInstance().init(this);
             Log.i(TAG, "✅ TelegramController initialized");
