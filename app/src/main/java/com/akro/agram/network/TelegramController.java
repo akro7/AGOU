@@ -143,7 +143,10 @@ public class TelegramController {
     }
 
     public void logOut() {
-        try { ConnectionsManager.getInstance(0).cleanUp(true); } catch (Throwable ignored) {}
+        // ← التعديل: حذف cleanUp واستبداله بإعادة تعيين الـ userId فقط
+        try {
+            ConnectionsManager.getInstance(0).setUserId(0);
+        } catch (Throwable ignored) {}
         if (context != null) {
             context.getSharedPreferences("akrogram", Context.MODE_PRIVATE).edit().clear().apply();
         }
