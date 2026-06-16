@@ -21,7 +21,6 @@ public class TelegramController {
     private static final int    API_ID   = 35978619;
     private static final String API_HASH = "7521a35c396ddecada6da6a8687a0324";
 
-    // ─── Singleton ────────────────────────────────────────────────────────────
     private static volatile TelegramController instance;
     public static TelegramController getInstance() {
         if (instance == null) {
@@ -32,14 +31,13 @@ public class TelegramController {
         return instance;
     }
 
-    // ─── State ────────────────────────────────────────────────────────────────
     private Context context;
     private TelegramAuthService authService;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    private final List<AuthListener>    authListeners    = new ArrayList<>();
-    private final List<DialogsListener> dialogsListeners = new ArrayList<>();
-    private final Map<Long, LastSeenInfo> lastSeenCache  = new HashMap<>();
+    private final List<AuthListener>      authListeners    = new ArrayList<>();
+    private final List<DialogsListener>   dialogsListeners = new ArrayList<>();
+    private final Map<Long, LastSeenInfo> lastSeenCache    = new HashMap<>();
 
     public static final int AUTH_STATE_WAIT_PHONE    = 0;
     public static final int AUTH_STATE_WAIT_CODE     = 1;
@@ -49,7 +47,6 @@ public class TelegramController {
     private int    currentAuthState = AUTH_STATE_WAIT_PHONE;
     private String currentPhone;
 
-    // ─── تحميل الـ native library ─────────────────────────────────────────────
     static {
         try {
             System.loadLibrary("tgnet");
@@ -59,7 +56,6 @@ public class TelegramController {
         }
     }
 
-    // ─── Init ─────────────────────────────────────────────────────────────────
     public void init(Context ctx) {
         this.context = ctx.getApplicationContext();
         this.authService = new TelegramAuthService(context, API_ID, API_HASH);
@@ -68,11 +64,10 @@ public class TelegramController {
         SharedPreferences prefs = context.getSharedPreferences("akrogram", Context.MODE_PRIVATE);
         long savedUserId = prefs.getLong("user_id", 0);
 
-        // تهيئة الـ tgnet native (للـ messaging بعد الـ auth)
         try {
-            ConnectionsManager.getInstance(0).init(context, API_ID, API_HASH, true, savedUserId);
+            ConnectionsManager.getInstance(0).setUserId(savedUserId);
         } catch (Throwable t) {
-            Log.w(TAG, "tgnet init skipped: " + t.getMessage());
+            Log.w(TAG, "tgnet setUserId skipped: " + t.getMessage());
         }
 
         if (savedUserId != 0) {
@@ -80,7 +75,6 @@ public class TelegramController {
         }
     }
 
-    // ─── Auth — بيستخدم TelegramAuthService (HTTPS حقيقي) ───────────────────
     public void sendPhone(String phone, AuthListener listener) {
         this.currentPhone = phone;
         addAuthListener(listener);
@@ -99,7 +93,6 @@ public class TelegramController {
 
             @Override
             public void onSignUpRequired() {
-                // مستخدم جديد — في AkroGram نعمله signUp تلقائي
                 authService.signUp("AkroGram", "User", this);
             }
 
@@ -124,7 +117,6 @@ public class TelegramController {
             @Override
             public void onAuthorized(long userId, String firstName, String username) {
                 Log.i(TAG, "✅ Authorized! userId=" + userId + " name=" + firstName);
-                // أخبر الـ tgnet بالـ userId الجديد
                 try { ConnectionsManager.getInstance(0).setUserId(userId); } catch (Throwable ignored) {}
                 mainHandler.post(() -> onAuthStateChanged(AUTH_STATE_AUTHORIZED));
             }
@@ -147,7 +139,6 @@ public class TelegramController {
 
     public void sendPassword(String password, AuthListener listener) {
         addAuthListener(listener);
-        // TODO: TelegramAuthService.checkPassword (2FA)
         mainHandler.post(() -> listener.onError("2FA غير مدعوم بعد"));
     }
 
@@ -160,11 +151,9 @@ public class TelegramController {
         lastSeenCache.clear();
     }
 
-    // ─── Stealth Story ────────────────────────────────────────────────────────
-    public void markStoryAsReadSilently(long peerId) { /* عمداً فاضية */ }
-    public void markStoryViewed(long peerId, int storyId) { /* TODO */ }
+    public void markStoryAsReadSilently(long peerId) {}
+    public void markStoryViewed(long peerId, int storyId) {}
 
-    // ─── Last-seen bypass ─────────────────────────────────────────────────────
     public void fetchLastSeen(long userId, LastSeenCallback callback) {
         LastSeenInfo cached = lastSeenCache.get(userId);
         if (cached != null && (System.currentTimeMillis() - cached.fetchedAt) < 60_000) {
@@ -207,7 +196,6 @@ public class TelegramController {
         return "آخر ظهور منذ فترة طويلة";
     }
 
-    // ─── Callbacks ────────────────────────────────────────────────────────────
     public void onAuthStateChanged(int state) {
         currentAuthState = state;
         mainHandler.post(() -> {
@@ -227,25 +215,22 @@ public class TelegramController {
         });
     }
 
-    // ─── Getters ──────────────────────────────────────────────────────────────
     public int     getCurrentAuthState() { return currentAuthState; }
     public boolean isAuthorized()        { return currentAuthState == AUTH_STATE_AUTHORIZED; }
     public String  getCurrentPhone()     { return currentPhone; }
 
-    // ─── Listeners ────────────────────────────────────────────────────────────
     public void addAuthListener(AuthListener l)          { if (!authListeners.contains(l)) authListeners.add(l); }
     public void removeAuthListener(AuthListener l)       { authListeners.remove(l); }
     public void addDialogsListener(DialogsListener l)    { if (!dialogsListeners.contains(l)) dialogsListeners.add(l); }
     public void removeDialogsListener(DialogsListener l) { dialogsListeners.remove(l); }
 
-    // ─── Data classes ─────────────────────────────────────────────────────────
     public static class LastSeenInfo {
         public long userId, wasOnline, fetchedAt;
         public boolean isOnline, isHidden;
         public String label;
     }
 
-    public interface LastSeenCallback   { void onResult(LastSeenInfo info); }
+    public interface LastSeenCallback { void onResult(LastSeenInfo info); }
     public interface AuthListener {
         void onAuthStateChanged(int state);
         void onError(String error);
