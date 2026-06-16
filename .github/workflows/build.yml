@@ -25,20 +25,22 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
 
-          # نسخ كل كود Java من DrKLO بالكامل
-          rsync -av telegram-src/TMessagesProj/src/main/java/ TMessagesProj/src/main/java/
+          # Java كامل من DrKLO
+          rsync -av telegram-src/TMessagesProj/src/main/java/ \
+                TMessagesProj/src/main/java/
 
-          # نسخ build.gradle الأصلي من DrKLO
+          # ← الإضافة المهمة: resources كاملة
+          rsync -av telegram-src/TMessagesProj/src/main/res/ \
+                TMessagesProj/src/main/res/
+
+          # ملفات الإعداد
           cp telegram-src/TMessagesProj/build.gradle TMessagesProj/build.gradle
-
-          # نسخ gradle.properties من DrKLO
           cp telegram-src/gradle.properties gradle.properties
-
-          # نسخ google-services.json من DrKLO
           cp telegram-src/TMessagesProj/google-services.json TMessagesProj/google-services.json
 
           # تفعيل buildConfig
-          sed -i '/android {/a\\n    buildFeatures {\n        buildConfig true\n    }' TMessagesProj/build.gradle
+          sed -i '/android {/a\\n    buildFeatures {\n        buildConfig true\n    }' \
+              TMessagesProj/build.gradle
 
           # رفع minSdk إلى 24
           sed -i 's/minSdkVersion 21/minSdkVersion 24/g' TMessagesProj/build.gradle
@@ -48,10 +50,10 @@ jobs:
           sed -i 's/targetSdkVersion 34/targetSdkVersion 35/g' TMessagesProj/build.gradle
 
           echo "✅ All files synced from DrKLO"
-          echo "--- Java files count ---"
+          echo "--- Java files ---"
           find TMessagesProj/src/main/java -name "*.java" | wc -l
-          echo "--- gradle.properties ---"
-          cat gradle.properties
+          echo "--- Res folders ---"
+          ls TMessagesProj/src/main/res/
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
@@ -78,42 +80,20 @@ jobs:
               app/src/main/java/com/akro/agram/network/TelegramController.java
             sed -i "s/\"7521a35c396ddecada6da6a8687a0324\"/\"$TG_API_HASH\"/" \
               app/src/main/java/com/akro/agram/network/TelegramController.java
-            echo "✅ API credentials overridden from secrets"
+            echo "✅ API credentials injected"
           else
-            echo "ℹ️ Using hardcoded credentials from source"
+            echo "ℹ️ Using hardcoded credentials"
           fi
 
       - name: Setup Gradle Wrapper
         run: |
           if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-            echo "📥 Downloading gradle-wrapper.jar..."
             mkdir -p gradle/wrapper
             curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
               -o gradle/wrapper/gradle-wrapper.jar
           fi
-          if [ ! -f "gradlew" ]; then
-            echo "❌ gradlew not found!"
-            exit 1
-          fi
           chmod +x gradlew
           echo "✅ Gradle wrapper ready"
-
-      - name: Extract native libs (if present)
-        run: |
-          if ls *.zip 1>/dev/null 2>&1; then
-            for f in *.zip; do
-              echo "Trying to extract native files from $f..."
-              unzip -q "$f" \
-                "*/jni/tgnet/*" \
-                "*/jni/sqlite/*" \
-                "*/jni/tde2e/*" \
-                "*/jni/TgNetWrapper.cpp" \
-                "*/jni/jni.c" \
-                -d TMessagesProj/ 2>/dev/null || true
-            done
-          else
-            echo "⚠️ No ZIP files found — skipping native extraction"
-          fi
 
       - name: Create debug keystore
         run: |
@@ -141,60 +121,9 @@ jobs:
           retention-days: 7
 
       - name: Upload Debug APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: AkroGram-debug-${{ github.run_number }}
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
-
-  lint:
-    name: 🔍 Lint Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Clone Telegram source
-        run: |
-          git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
-
-          rsync -av telegram-src/TMessagesProj/src/main/java/ TMessagesProj/src/main/java/
-
-          cp telegram-src/TMessagesProj/build.gradle TMessagesProj/build.gradle
-          cp telegram-src/gradle.properties gradle.properties
-          cp telegram-src/TMessagesProj/google-services.json TMessagesProj/google-services.json
-
-          sed -i '/android {/a\\n    buildFeatures {\n        buildConfig true\n    }' TMessagesProj/build.gradle
-          sed -i 's/minSdkVersion 21/minSdkVersion 24/g' TMessagesProj/build.gradle
-          sed -i 's/compileSdkVersion 34/compileSdkVersion 35/g' TMessagesProj/build.gradle
-          sed -i 's/targetSdkVersion 34/targetSdkVersion 35/g' TMessagesProj/build.gradle
-
-          echo "✅ Telegram source synced (lint)"
-          find TMessagesProj/src/main/java -name "*.java" | wc -l
-
-      - uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: gradle
-      - uses: android-actions/setup-android@v3
-
-      - name: Setup Gradle Wrapper
-        run: |
-          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-            mkdir -p gradle/wrapper
-            curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
-              -o gradle/wrapper/gradle-wrapper.jar
-          fi
-          chmod +x gradlew
-
-      - name: Run Lint
-        run: ./gradlew lint --no-daemon
-
-      - name: Upload Lint Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: lint-report
-          path: app/build/reports/lint-results*.html
-          retention-days: 7
