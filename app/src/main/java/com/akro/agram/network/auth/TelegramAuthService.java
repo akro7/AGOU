@@ -27,8 +27,7 @@ public class TelegramAuthService {
     private void ensureConnectionsManager() {
         if (cmInitialized) return;
         try {
-            ConnectionsManager cm = ConnectionsManager.getInstance(0);
-            cm.applyCountryPortNumber("+20"); // كود مصر أو اتركها فاضية
+            ConnectionsManager.getInstance(0);
             cmInitialized = true;
             Log.i(TAG, "✅ ConnectionsManager initialized");
         } catch (Throwable t) {
