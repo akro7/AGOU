@@ -24,6 +24,7 @@ jobs:
       - name: Clone Telegram source
         run: |
           git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
+          rm -rf TMessagesProj/src/main/java/org/telegram
           cp -r telegram-src/TMessagesProj/src/main/java/org/telegram \
                 TMessagesProj/src/main/java/org/
           echo "✅ Telegram source copied"
@@ -132,6 +133,7 @@ jobs:
       - name: Clone Telegram source
         run: |
           git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
+          rm -rf TMessagesProj/src/main/java/org/telegram
           cp -r telegram-src/TMessagesProj/src/main/java/org/telegram \
                 TMessagesProj/src/main/java/org/
 
