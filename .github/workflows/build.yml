@@ -24,15 +24,26 @@ jobs:
       - name: Clone Telegram source
         run: |
           git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
+
+          # نسخ كود Java
           rm -rf TMessagesProj/src/main/java/org/telegram
-          
-          # إنشاء الفولدر المستهدف أولاً للتأكد من مسار النسخ الصحيح
           mkdir -p TMessagesProj/src/main/java/org/telegram
-          
-          # نسخ المحتويات الداخلية فقط دون استبدال أو التأثير على ملفات الـ gradle الخاصة بك
           cp -r telegram-src/TMessagesProj/src/main/java/org/telegram/* TMessagesProj/src/main/java/org/telegram/
-          
-          echo "✅ Telegram source copied (keeping our custom build.gradle)"
+
+          # نسخ build.gradle الأصلي من DrKLO ثم إضافة تعديلاتنا
+          cp telegram-src/TMessagesProj/build.gradle TMessagesProj/build.gradle
+
+          # تفعيل buildConfig
+          sed -i '/android {/a\\n    buildFeatures {\n        buildConfig true\n    }' TMessagesProj/build.gradle
+
+          # رفع minSdk إلى 24
+          sed -i 's/minSdkVersion 21/minSdkVersion 24/g' TMessagesProj/build.gradle
+
+          # رفع compileSdk و targetSdk إلى 35
+          sed -i 's/compileSdkVersion 34/compileSdkVersion 35/g' TMessagesProj/build.gradle
+          sed -i 's/targetSdkVersion 34/targetSdkVersion 35/g' TMessagesProj/build.gradle
+
+          echo "✅ Telegram source + build.gradle copied and patched"
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
@@ -138,13 +149,18 @@ jobs:
       - name: Clone Telegram source
         run: |
           git clone --depth=1 https://github.com/DrKLO/Telegram telegram-src
+
           rm -rf TMessagesProj/src/main/java/org/telegram
-          
-          # نفس التعديل لخطوة الـ Lint لضمان عدم حدوث تعارض
           mkdir -p TMessagesProj/src/main/java/org/telegram
           cp -r telegram-src/TMessagesProj/src/main/java/org/telegram/* TMessagesProj/src/main/java/org/telegram/
-          
-          echo "✅ Telegram source copied (keeping our custom build.gradle)"
+
+          cp telegram-src/TMessagesProj/build.gradle TMessagesProj/build.gradle
+          sed -i '/android {/a\\n    buildFeatures {\n        buildConfig true\n    }' TMessagesProj/build.gradle
+          sed -i 's/minSdkVersion 21/minSdkVersion 24/g' TMessagesProj/build.gradle
+          sed -i 's/compileSdkVersion 34/compileSdkVersion 35/g' TMessagesProj/build.gradle
+          sed -i 's/targetSdkVersion 34/targetSdkVersion 35/g' TMessagesProj/build.gradle
+
+          echo "✅ Telegram source copied (lint)"
 
       - uses: actions/setup-java@v4
         with:
