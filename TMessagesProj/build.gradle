@@ -130,11 +130,11 @@ dependencies {
     implementation 'com.google.android.recaptcha:recaptcha:18.7.1'
 
     // ExoPlayer
-    implementation 'com.google.android.exoplayer2:exoplayer-core:2.19.1'
-    implementation 'com.google.android.exoplayer2:exoplayer-ui:2.19.1'
-    implementation 'com.google.android.exoplayer2:exoplayer-hls:2.19.1'
-    implementation 'com.google.android.exoplayer2:exoplayer-dash:2.19.1'
-    implementation 'com.google.android.exoplayer2:extension-mediasession:2.19.1'
+    implementation 'com.google.android.exoplayer2:exoplayer-core:2.18.1'
+    implementation 'com.google.android.exoplayer2:exoplayer-ui:2.18.1'
+    implementation 'com.google.android.exoplayer2:exoplayer-hls:2.18.1'
+    implementation 'com.google.android.exoplayer2:exoplayer-dash:2.18.1'
+    implementation 'com.google.android.exoplayer2:extension-mediasession:2.18.1'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     constraints {
