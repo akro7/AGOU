@@ -1,11 +1,12 @@
 package com.akro.agram;
 
+import android.app.Application;
 import android.content.Context;
 import android.util.Log;
 import com.akro.agram.network.TelegramController;
 import org.telegram.messenger.ApplicationLoader;
 
-public class AkroGramApp extends ApplicationLoader {
+public class AkroGramApp extends Application {
 
     private static final String TAG = "AkroGram/App";
     private static AkroGramApp instance;
@@ -17,12 +18,21 @@ public class AkroGramApp extends ApplicationLoader {
 
     @Override
     public void onCreate() {
-        instance = this;
-        
-        // ضروري بدون try/catch عشان يهيأ libtgnet.so
         super.onCreate();
+        instance = this;
 
-        // بعد ما الـ tgnet اتهيأ، شغّل الـ controller بتاعنا
+        // تهيئة applicationContext اللي بيحتاجه ConnectionsManager
+        ApplicationLoader.applicationContext = getApplicationContext();
+
+        // تحميل الـ native library يدوياً
+        try {
+            System.loadLibrary("tgnet");
+            Log.i(TAG, "✅ libtgnet.so loaded");
+        } catch (UnsatisfiedLinkError e) {
+            Log.e(TAG, "❌ libtgnet.so failed: " + e.getMessage());
+        }
+
+        // تهيئة TelegramController
         try {
             TelegramController.getInstance().init(this);
             Log.i(TAG, "✅ TelegramController initialized");
