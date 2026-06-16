@@ -4,7 +4,6 @@ import android.app.Application;
 import android.content.Context;
 import android.util.Log;
 import com.akro.agram.network.TelegramController;
-import org.telegram.messenger.ApplicationLoader;
 
 public class AkroGramApp extends Application {
 
@@ -21,18 +20,18 @@ public class AkroGramApp extends Application {
         super.onCreate();
         instance = this;
 
-        // تهيئة applicationContext اللي بيحتاجه ConnectionsManager
-        ApplicationLoader.applicationContext = getApplicationContext();
-
-        // تحميل الـ native library يدوياً
+        // تهيئة tgnet عبر reflection بدون تشغيل ApplicationLoader كامل
         try {
-            System.loadLibrary("tgnet");
-            Log.i(TAG, "✅ libtgnet.so loaded");
-        } catch (UnsatisfiedLinkError e) {
-            Log.e(TAG, "❌ libtgnet.so failed: " + e.getMessage());
+            org.telegram.messenger.ApplicationLoader.applicationContext = getApplicationContext();
+            Class<?> nativeLoader = Class.forName("org.telegram.messenger.NativeLoader");
+            java.lang.reflect.Method initNativeLibs = nativeLoader.getDeclaredMethod("initNativeLibs", Context.class);
+            initNativeLibs.setAccessible(true);
+            initNativeLibs.invoke(null, getApplicationContext());
+            Log.i(TAG, "✅ NativeLoader initialized");
+        } catch (Throwable t) {
+            Log.e(TAG, "❌ NativeLoader failed: " + t.getMessage());
         }
 
-        // تهيئة TelegramController
         try {
             TelegramController.getInstance().init(this);
             Log.i(TAG, "✅ TelegramController initialized");
