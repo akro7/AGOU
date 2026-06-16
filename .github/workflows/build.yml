@@ -30,8 +30,11 @@ jobs:
           mkdir -p TMessagesProj/src/main/java/org/telegram
           cp -r telegram-src/TMessagesProj/src/main/java/org/telegram/* TMessagesProj/src/main/java/org/telegram/
 
-          # نسخ build.gradle الأصلي من DrKLO ثم إضافة تعديلاتنا
+          # نسخ build.gradle الأصلي من DrKLO
           cp telegram-src/TMessagesProj/build.gradle TMessagesProj/build.gradle
+
+          # نسخ gradle.properties من DrKLO (يحتوي على APP_VERSION_NAME وغيره)
+          cp telegram-src/gradle.properties gradle.properties
 
           # تفعيل buildConfig
           sed -i '/android {/a\\n    buildFeatures {\n        buildConfig true\n    }' TMessagesProj/build.gradle
@@ -43,7 +46,9 @@ jobs:
           sed -i 's/compileSdkVersion 34/compileSdkVersion 35/g' TMessagesProj/build.gradle
           sed -i 's/targetSdkVersion 34/targetSdkVersion 35/g' TMessagesProj/build.gradle
 
-          echo "✅ Telegram source + build.gradle copied and patched"
+          echo "✅ Telegram source + build.gradle + gradle.properties copied and patched"
+          echo "--- gradle.properties ---"
+          cat gradle.properties
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
@@ -155,6 +160,8 @@ jobs:
           cp -r telegram-src/TMessagesProj/src/main/java/org/telegram/* TMessagesProj/src/main/java/org/telegram/
 
           cp telegram-src/TMessagesProj/build.gradle TMessagesProj/build.gradle
+          cp telegram-src/gradle.properties gradle.properties
+
           sed -i '/android {/a\\n    buildFeatures {\n        buildConfig true\n    }' TMessagesProj/build.gradle
           sed -i 's/minSdkVersion 21/minSdkVersion 24/g' TMessagesProj/build.gradle
           sed -i 's/compileSdkVersion 34/compileSdkVersion 35/g' TMessagesProj/build.gradle
